@@ -24,7 +24,6 @@ func init() {
 
 func registerJavaPluginBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("java_plugin", PluginFactory)
-	ctx.RegisterModuleType("kotlin_plugin", KotlinPluginFactory)
 }
 
 func PluginFactory() android.Module {
@@ -32,16 +31,6 @@ func PluginFactory() android.Module {
 
 	module.addHostProperties()
 	module.AddProperties(&module.pluginProperties)
-
-	InitJavaModule(module, android.HostSupported)
-
-	return module
-}
-
-func KotlinPluginFactory() android.Module {
-	module := &KotlinPlugin{}
-
-	module.addHostProperties()
 
 	InitJavaModule(module, android.HostSupported)
 
@@ -63,9 +52,4 @@ type PluginProperties struct {
 	// This necessitates disabling the turbine optimization on modules that use this plugin, which will reduce
 	// parallelism and cause more recompilation for modules that depend on modules that use this plugin.
 	Generates_api *bool
-}
-
-// Plugin describes a kotlin_plugin module, a host java/kotlin library that will be used by kotlinc as a compiler plugin.
-type KotlinPlugin struct {
-	Library
 }

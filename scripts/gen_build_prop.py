@@ -64,73 +64,75 @@ def override_config(config):
       config[key] = value
 
 def parse_args():
-  """Parse commandline arguments."""
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--build-fingerprint-file", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--build-hostname-file", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--build-number-file", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--build-thumbprint-file", type=argparse.FileType("r"))
-  parser.add_argument("--build-username", required=True)
-  parser.add_argument("--date-file", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--platform-preview-sdk-fingerprint-file", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--prop-files", action="append", type=argparse.FileType("r"), default=[])
-  parser.add_argument("--product-config", required=True, type=argparse.FileType("r"))
-  parser.add_argument("--partition", required=True)
-  parser.add_argument("--build-broken-dup-sysprop", action="store_true", default=False)
+    """Parse commandline arguments."""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--build-fingerprint-file", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--build-hostname-file", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--build-number-file", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--build-thumbprint-file", type=argparse.FileType("r"))
+    parser.add_argument("--build-username", required=True)
+    parser.add_argument("--date-file", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--platform-preview-sdk-fingerprint-file", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--prop-files", action="append", type=argparse.FileType("r"), default=[])
+    parser.add_argument("--product-config", required=True, type=argparse.FileType("r"))
+    parser.add_argument("--partition", required=True)
+    parser.add_argument("--build-broken-dup-sysprop", action="store_true", default=False)
 
-  parser.add_argument("--out", required=True, type=argparse.FileType("w"))
+    parser.add_argument("--out", required=True, type=argparse.FileType("w"))
 
-  args = parser.parse_args()
+    args = parser.parse_args()
 
-  # post process parse_args requiring manual handling
-  args.config = json.load(args.product_config)
-  config = args.config
+    # post process parse_args requiring manual handling
+    args.config = json.load(args.product_config)
+    config = args.config
 
-  config["BuildFlavor"] = get_build_flavor(config)
-  config["BuildKeys"] = get_build_keys(config)
-  config["BuildVariant"] = get_build_variant(config)
+    config["BuildFlavor"] = get_build_flavor(config)
+    config["BuildKeys"] = get_build_keys(config)
+    config["BuildVariant"] = get_build_variant(config)
 
-  config["BuildFingerprint"] = args.build_fingerprint_file.read().strip()
-  config["BuildHostname"] = args.build_hostname_file.read().strip()
-  config["BuildNumber"] = args.build_number_file.read().strip()
-  config["BuildUsername"] = args.build_username
+    config["BuildFingerprint"] = args.build_fingerprint_file.read().strip()
+    config["BuildHostname"] = args.build_hostname_file.read().strip()
+    config["BuildNumber"] = args.build_number_file.read().strip()
+    config["BuildUsername"] = args.build_username
 
-  build_version_tags_list = config["BuildVersionTags"]
-  if config["BuildType"] == "debug":
-    build_version_tags_list.append("debug")
-  build_version_tags_list.append(config["BuildKeys"])
-  build_version_tags = ",".join(sorted(set(build_version_tags_list)))
-  config["BuildVersionTags"] = build_version_tags
+    build_version_tags_list = config["BuildVersionTags"]
+    if config["BuildType"] == "debug":
+        build_version_tags_list.append("debug")
+    build_version_tags_list.append(config["BuildKeys"])
+    build_version_tags = ",".join(sorted(set(build_version_tags_list)))
+    config["BuildVersionTags"] = build_version_tags
 
-  raw_date = args.date_file.read().strip()
-  config["Date"] = subprocess.check_output(["date", "-d", f"@{raw_date}"], text=True).strip()
-  config["DateUtc"] = subprocess.check_output(["date", "-d", f"@{raw_date}", "+%s"], text=True).strip()
+    raw_date = args.date_file.read().strip()
+    config["Date"] = subprocess.check_output(["date", "-d", f"@{raw_date}"], text=True).strip()
+    config["DateUtc"] = subprocess.check_output(["date", "-d", f"@{raw_date}", "+%s"], text=True).strip()
 
-  # build_desc is human readable strings that describe this build. This has the same info as the
-  # build fingerprint.
-  # e.g. "aosp_cf_x86_64_phone-userdebug VanillaIceCream MAIN eng.20240319.143939 test-keys"
-  config["BuildDesc"] = f"{config['DeviceProduct']}-{config['BuildVariant']} " \
+    # build_desc is human readable strings that describe this build. This has the same info as the
+    # build fingerprint.
+    # e.g. "aosp_cf_x86_64_phone-userdebug VanillaIceCream MAIN eng.20240319.143939 test-keys"
+    config["BuildDesc"] = f"{config['DeviceProduct']}-{config['BuildVariant']} " \
                         f"{config['Platform_version_name']} {config['BuildId']} " \
                         f"{config['BuildNumber']} {config['BuildVersionTags']}"
 
-  config["PlatformPreviewSdkFingerprint"] = args.platform_preview_sdk_fingerprint_file.read().strip()
+    config["PlatformPreviewSdkFingerprint"] = (
+        args.platform_preview_sdk_fingerprint_file.read().strip()
+    )
 
-  if args.build_thumbprint_file:
-    config["BuildThumbprint"] = args.build_thumbprint_file.read().strip()
+    if args.build_thumbprint_file:
+        config["BuildThumbprint"] = args.build_thumbprint_file.read().strip()
 
-  config["LineageDesc"] = config["BuildDesc"]
-  config["LineageDevice"] = config["DeviceName"]
+    config["CustomDesc"] = config["BuildDesc"]
+    config["CustomDevice"] = config["DeviceName"]
 
-  if config["BuildNumber"].startswith("eng."):
-    config["BuildNumber"] = config["DateUtc"]
+    if config["BuildNumber"].startswith("eng."):
+        config["BuildNumber"] = config["DateUtc"]
 
-  override_config(config)
+    override_config(config)
 
-  append_additional_system_props(args)
-  append_additional_vendor_props(args)
-  append_additional_product_props(args)
+    append_additional_system_props(args)
+    append_additional_vendor_props(args)
+    append_additional_product_props(args)
 
-  return args
+    return args
 
 def generate_common_build_props(args):
   print("####################################")
@@ -221,7 +223,7 @@ def generate_build_info(args):
       print(f"ro.build.display.id?={config['BuildId']} {config['BuildKeys']}")
   else:
     # Non-user builds should show detailed build information (See build desc above)
-    print(f"ro.build.display.id?={config['LineageDesc']}")
+    print(f"ro.build.display.id?={config['CustomDesc']}")
   print(f"ro.build.version.incremental={config['BuildNumber']}")
   print(f"ro.build.version.sdk={config['Platform_sdk_version']}")
   print(f"ro.build.version.preview_sdk={config['Platform_preview_sdk_version']}")
@@ -248,7 +250,7 @@ def generate_build_info(args):
   # flavor (via a dedicated lunch config for example).
   print(f"ro.build.flavor={config['BuildFlavor']}")
 
-  print(f"ro.lineage.device={config['LineageDevice']}")
+  print(f"ro.custom.device={config['LineageDevice']}")
 
   # These values are deprecated, use "ro.product.cpu.abilist"
   # instead (see below).

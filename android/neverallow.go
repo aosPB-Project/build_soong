@@ -60,7 +60,6 @@ func init() {
 	AddNeverAllowRules(createCcStubsRule())
 	AddNeverAllowRules(createJavaExcludeStaticLibsRule())
 	AddNeverAllowRules(createProhibitHeaderOnlyRule())
-	AddNeverAllowRules(createKotlinPluginRule()...)
 }
 
 // Add a NeverAllow rule to the set of rules to apply.
@@ -264,23 +263,6 @@ func createProhibitHeaderOnlyRule() Rule {
 		Without("name", "framework-minus-apex-headers").
 		With("headers_only", "true").
 		Because("headers_only can only be used for generating framework-minus-apex headers for non-updatable modules")
-}
-
-func createKotlinPluginRule() []Rule {
-	kotlinPluginProjectsAllowedList := []string{
-		// TODO: Migrate compose plugin to the bundled compiler plugin
-		// Actual path prebuilts/sdk/current/androidx/m2repository/androidx/compose/compiler/compiler-hosted
-		"prebuilts/sdk/current/androidx",
-		"external/kotlinc",
-		"vendor/lineage/kotlin",
-	}
-
-	return []Rule{
-		NeverAllow().
-			NotIn(kotlinPluginProjectsAllowedList...).
-			ModuleType("kotlin_plugin").
-			Because("kotlin_plugin can only be used in allowed projects"),
-	}
 }
 
 func neverallowMutator(ctx BottomUpMutatorContext) {
